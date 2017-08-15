@@ -54,7 +54,9 @@ if ($tag -eq "") {
         $status = "in_tag"
       }
       elseif ($line -Match "</$tag>") {
-        $tmp = $message -replace "><", ">,<"
+        $tmp = $message -replace ">\s*<", ">,<"
+        $tmp = $tmp -replace "><", ">,<"
+        $tmp = $tmp -replace "^\s*", ""
         $message = $tmp -replace "/>",">,,</>"
         $message
         $status = "out_tag"
