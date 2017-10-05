@@ -8,6 +8,7 @@
     File Name      : xml2csv.ps1  
     Author         : Jiri Kindl; kindl_jiri@yahoo.com
     Prerequisite   : PowerShell V2 over Vista and upper.
+    Version        : 20171004
     Copyright 2017 - Jiri Kindl
 .LINK  
     
@@ -17,7 +18,7 @@
 
 #pars parametrs with param
 #foreach ($file in (Get-ChildItem .\EventLogs)) {.\xml2csv.ps1 -tag "event_message" -inputfile $file.fullname >> .\Events.csv}
-param([string]$inputfile = "",[string]$tag = "")
+param([string]$inputfile = "",[string]$tag = "",[string]$separator = ",")
 
 Function usage {
   "Script takes XML and all subtags/ tags nested under given tag put in one line. rest is ingonred"
@@ -49,15 +50,15 @@ if ($tag -eq "") {
       $lines=$input
     }
     Foreach ($line in $lines) {
-      if ($line -Match "<$tag>"){
+      if (($line -Match "<$tag>") -or ($line -Match "<$tag .*>")){
         $message = ""
         $status = "in_tag"
       }
       elseif ($line -Match "</$tag>") {
-        $tmp = $message -replace ">\s*<", ">,<"
+        $tmp = $message -replace ">\s*<", ">$separator<"
         $tmp = $tmp -replace "><", ">,<"
         $tmp = $tmp -replace "^\s*", ""
-        $message = $tmp -replace "/>",">,,</>"
+        $message = $tmp -replace "/>",">$separator$separator</>"
         $message
         $status = "out_tag"
       }
