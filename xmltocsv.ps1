@@ -1,31 +1,21 @@
-﻿<#
+<#
 .Synopsis
 Convert Fujitsu XML to CSV format
 
 .Description
-The `Get-IbReport` cmdlet import transaction history from Interactive Brokers using flex query version 3 API.
-Interactive Brokers provides two types of statements. The Activity Flex and Trade Confirms Flex.
-Activity Flex statement provides daily data with all information at the end of the day (Total equity, open positions, trades, cash transactions etc.)
-Trade Confirms Flex provides the trades only but it is refreshed immediately after the trade is confirmed.
+The `ConvertTo-FujitsuCsv` cmdlet import transaction Fujitsu XML into a series of character-separated value (CSV) strings.
 
-.Parameter Query
-Flex query ID of Interactive Brokers.
+.Parameter InputObject
+Specifies the objects that are converted to CSV strings. Enter a variable that contains the objects or type a command or expression that gets the objects.
 
-.Parameter Token
-Your flex web service token in Interactive Brokers.
+.Parameter OutputObject
+Specifies the output filename of CSV.
 
 .Example
-Get-IbReport -Query 123456
-
-.Example
-Get-IbReport 123456
-
-.Example
-Get-IbReport 123456 | Sort-Object settledate | Select-Object -Last 15 | Format-Table
+ConvertTo-FujitsuCsv -InputObject input.xml -OutputObject out.csv
 
 .LINK
-Online version: https://www.interactivebrokers.com/en/software/am/am/reports/flex_web_service_version_3.htm
-Project homepage: https://github.com/scout249/Interactive-Brokers-Powershell
+Project homepage: https://github.com/scout249/fujitsu-xml2csv
 
 #>
 
@@ -61,20 +51,3 @@ ac temp.txt ",,,,Total Price`n,,,,0"
 
 #Remove Double Quote
 gc temp.txt | % {$_ -replace '"'}  | Set-Content $outFile
-
-
-
-
-
-
-
-<#
-
-#Unused Code
-#Remove Empty Lines
-gc temp.txt | ? {$_.trim() -ne "" } | Set-Content $outFile
-Export-Csv out.csv -NoTypeInformation
-@{Name = "Attributes"; Expression = {$_.Mode}},
-@{Name = "Updated_UTC"; Expression = {$_.LastWriteTime.ToUniversalTime()}}
-name, SachNr, count
-#>
