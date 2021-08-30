@@ -16,12 +16,12 @@ ConvertTo-FujitsuCsv -InputObject input.xml -OutputObject out.csv
 
 .LINK
 Project homepage: https://github.com/scout249/fujitsu-xml2csv
-
 #>
 
 #Installation
 #Set-ExecutionPolicy -ExecutionPolicy Bypass
 #Install-Module -Name JoinModule
+
 
 #Define Variable
 $baseDir = "C:\XML2CSV"
@@ -35,6 +35,7 @@ $temp = "temp.txt"
     $_ -replace '</Components>\s*</Component>' `
        -replace '<Components>', '</Component>'
     } | sc $temp
+
 
 #Convert XML to CSV
 sl $baseDir
@@ -53,6 +54,7 @@ ipcsv $outFile |
     InnerJoin $importMaster -On "Part Number" | 
     Select "Product Name", "Part Number", "CP Figure Number", "Quantity", "Unit Price" | 
     epcsv temp.txt -NoTypeInformation
+
 
 #Append to CSV file
 ac $temp ",,,,Total Price`n,,,,0"
