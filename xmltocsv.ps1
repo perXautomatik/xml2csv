@@ -16,27 +16,33 @@ ConvertTo-FujitsuCsv -InputObject input.xml -OutputObject out.csv
 
 .LINK
 Project homepage: https://github.com/scout249/fujitsu-xml2csv
+
 #>
 
 #Installation
-#Set-ExecutionPolicy -ExecutionPolicy Bypass
 #Install-Module -Name JoinModule
+
+function Convert-WebArchitect {
+
+[CmdletBinding()]
+Param(
+    [string]$inFile,
+    [string]$outFile
+)
 
 
 #Define Variable
-$baseDir = "C:\XML2CSV"
-$inFile = "Multi Configuration.xml"
-$outFile = "out.csv"
+#$baseDir = "C:\XML2CSV"
+#$inFile = "Multi Configuration.xml"
+#$outFile = "out.csv"
 $masterFile = "BTO component master database.csv"
 $temp = "temp.txt"
 
 #Remove <Components> Tag
-sl $baseDir
 (gc $inFile -raw) | % {
     $_ -replace '</Components>\s*</Component>' `
        -replace '<Components>', '</Component>'
     } | sc $temp
-
 
 #Convert XML to CSV
 [xml]$xmlin = Get-Content $temp
@@ -55,8 +61,9 @@ ipcsv $outFile |
     Select "Product Name", "Part Number", "CP Figure Number", "Quantity", "Unit Price" | 
     epcsv temp.txt -NoTypeInformation
 
-
 #Append to CSV file
 ac $temp ",,,,Total Price`n,,,,0"
 del $outFile
 rni $temp $outFile
+
+}
