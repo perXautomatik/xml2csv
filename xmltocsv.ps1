@@ -24,30 +24,36 @@ Project homepage: https://github.com/scout249/fujitsu-xml2csv
 
 #Define Variable
 $baseDir = "C:\XML2CSV"
-$inFile = "in.xml"
+$inFile = "Multi Configuration.xml"
 $outFile = "out.csv"
 $masterFile = "BTO component master database.csv"
+$temp = "temp.txt"
+
+#Remove <Components> Tag
+(gc $inFile -raw) | % {
+    $_ -replace '</Components>\s*</Component>' `
+       -replace '<Components>', '</Component>'
+    } | sc $temp
 
 #Convert XML to CSV
 sl $baseDir
-[xml]$xmlin = Get-Content $inFile
-$xmlin.Order.Systems.Component.Components.Component | select `
+[xml]$xmlin = Get-Content $temp
+$xmlin.Order.Systems.Component | select `
     @{N="Product Name"; E={$_.name}},
     @{N="Part Number"; E={$_.SachNr}},
     @{N="Quantity"; E={$_.Count}},
-    @{N="Unit Price"; E={"0"}} | Export-Csv $outFile -NoTypeInformation
+    @{N="Unit Price"; E={"0"}} | epcsv $outFile -NoTypeInformation
 
 
 #Merge Tables
-$importMaster = Import-Csv $masterFile | 
+$importMaster = ipcsv $masterFile | 
     Select "Part Number", "CP Figure Number"
-Import-csv $outFile | 
+ipcsv $outFile | 
     InnerJoin $importMaster -On "Part Number" | 
     Select "Product Name", "Part Number", "CP Figure Number", "Quantity", "Unit Price" | 
-    Export-Csv temp.txt -NoTypeInformation
+    epcsv temp.txt -NoTypeInformation
 
 #Append to CSV file
-ac temp.txt ",,,,Total Price`n,,,,0"
-
-#Remove Double Quote
-gc temp.txt | % {$_ -replace '"'}  | Set-Content $outFile
+ac $temp ",,,,Total Price`n,,,,0"
+del $outFile
+rni $temp $outFile
