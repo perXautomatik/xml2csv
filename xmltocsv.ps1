@@ -31,6 +31,7 @@ $masterFile = "BTO component master database.csv"
 $temp = "temp.txt"
 
 #Remove <Components> Tag
+sl $baseDir
 (gc $inFile -raw) | % {
     $_ -replace '</Components>\s*</Component>' `
        -replace '<Components>', '</Component>'
@@ -38,7 +39,6 @@ $temp = "temp.txt"
 
 
 #Convert XML to CSV
-sl $baseDir
 [xml]$xmlin = Get-Content $temp
 $xmlin.Order.Systems.Component | select `
     @{N="Product Name"; E={$_.name}},
