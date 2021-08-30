@@ -20,6 +20,7 @@ Project homepage: https://github.com/scout249/fujitsu-xml2csv
 #>
 
 #Installation
+#Set-ExecutionPolicy -ExecutionPolicy Bypass
 #Install-Module -Name JoinModule
 
 #Define Variable
