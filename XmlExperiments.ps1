@@ -1,85 +1,98 @@
-﻿
-Clear-Host
-##Add-Type -Path 'C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\3.1.0\ref\netcoreapp3.1\System.Xml.ReaderWriter.dll'
-[System.Reflection.Assembly]::LoadWithPartialName("System.Xml.ReaderWriter.Smo")
-
-
-function xml-pack {
+﻿function  xml-unNest {
 
   param (
 
-  [Parameter(Mandatory=$true)] $xml,
-  [Parameter(Mandatory=$false)][int]$depth = 0,
-  [Parameter(Mandatory=$false)][int]$counter = 0
+  [Parameter(Mandatory=$true)][xml]$xml,
+  [Parameter(Mandatory=$false)][int]$depth = 0
   )     
-                                                      $Name = "empty"
-                                                      $value = "empty"
-                                                      $complexity = 0
-                                                      $length = 0
-                                                      $type = "empty"
-                                                      $parent = "unknown"
-                                                      $debugg = ""
-                                                      $inputLength = 0 
-                                                      $inputLength = (""+$xml).Length        
-
-    if ($xml  -is [System.Object])
-                {
-                    $complexity = $xml.ChildNodes.Count
-                    $debugg = $debugg + "System.Object"
-
-                    try{
-                        $xml = $xml | ConvertTo-Xml
-                        $debugg = $debugg + $xml.GetType()
-                    }
-                    catch{$debugg = "error"}
-
-                }
-  
-  if($xml  -is  [System.Xml.XmlElement])
-                  {
-                    [System.XML.XMLDocument]$oXMLDocument=New-Object System.XML.XMLDocument
-                    $z = $oXMLDocument.ImportNode($Xml, $true)
-                    $null =  $oXMLDocument.DocumentElement.AppendChild($z)      
-                    $xml = $z
-                    $debugg = "xmlElement"
-                   }
-   
-  if ($xml  -is  [System.Xml.XmlDocument])
-                   {
-
-                    $Name = if($xml.localName -ne $null -and $xml.localName -ne ""){$xml.localName}else{$counter}
-                    
-                    $complexity = $xml.ChildNodes.Count
-
-                    $Value = if($complexity -ge 2){$xml.InnerXml}else{$xml.value}
-                    
-                    $length = $xml.InnerXml.Length        
-                    $type = $Xml.GetType()
-                    $debugg = $debugg + "xmlDocument"
-                    }
-   
-    else
+  $outPut= ""      
+    if ($xml.HasChildNodes -and $xml.ChildNodes.Count -ne 1) 
     {
-        $length = (""+$xml).length
-        $value = (""+$xml).Substring(0, [Math]::Min($length, 40))
-        $type = $xml.GetType()
-        $debugg = $debugg + ($xml  -is [System.Object] )
+        ##"has childnodes"
+        ForEach ($XmlNode in $xml.ChildNodes) 
+        {
+            [System.XML.XMLDocument]$oXMLDocument=New-Object System.XML.XMLDocument
+
+
+            $z = $oXMLDocument.ImportNode($XmlNode, $true)
+            
+            if($null -ne $z )
+            {
+            
+                if($null -ne $oXMLDocument)
+                {
+                    try {
+                            
+                        #Write-Progress "Step $i - Substep $j - iteration $k"
+                        $newDepth = (1+$dept)
+                        #$newDepth
+                        if($oXMLDocument.DocumentElement -ne $null)
+                        {
+                            $null =  $oXMLDocument.DocumentElement.AppendChild($z)                     
+                               
+                            xml-unNest -xml $oXMLDocument -depth $newDepth
+                        }
+                        else {
+                            $null =  $oXMLDocument.AppendChild($z)
+                            xml-unNest -xml $oXMLDocument -depth $newDepth
+                        }                    
+                        }
+                    catch {
+                            $outPut = 'Caught Error'
+                        }
+                }
+                else
+                {
+                    $outPut = "Temp oxmlDocumentIsnull"
+                }
+            }
+            else 
+            {
+                $outPut = "z is null"
+            }           
+
+            [pscustomobject]@{
+                Name = if($XmlNode.localName -ne $null -and $XmlNode.localName -ne ""){$XmlNode.localName}else{$counter}
+                FromGroup = if($XmlNode.ParentNode -ne $null -and $XmlNode.ParentNode -ne ""){$XmlNode.ParentNode}else{$counter}
+                Value = $outPut
+                depth = $counter
+                children = $XmlNode.HasChildNodes
+                childrenCount = $XmlNode.ChildNodes.Count
+                length = $XmlNode.InnerXml.Length
+                xml = $XmlNode.InnerXml.Substring(0, [Math]::Min($XmlNode.InnerXml.Length, 40))
+            }
+        }  
+
     }
-    
-    return [pscustomobject]@{
-        Name = $Name
-        value = $value
-        complexity = $complexity
-        length = $length
-        type = $type
-        parent = $parent
-        debugg = $debugg
-        depth = $depth
-    }
+    else {
+    ##"no childnodes"
+
+    ## Send the non-group object out
+    $outPut = $xml.Value
+      
+    }     
+    ##$xml.LocalName
+
+    [pscustomobject]@{
+    Name = if($xml.localName -ne $null -and $xml.localName -ne ""){$xml.localName}else{$counter}
+    FromGroup = if($xml.ParentNode -ne $null -and $xml.ParentNode -ne ""){$xml.ParentNode}else{$counter}
+    Value = $outPut
+    depth = $counter
+    children = $xml.HasChildNodes
+    childrenCount = $xml.ChildNodes.Count
+    length = $xml.InnerXml.Length
+    xml = $xml.InnerXml.Substring(0, [Math]::Min($xml.InnerXml.Length, 40))
+    }  
 }
 
+  xml-unNest ( get-content C:\Users\crbk01\Desktop\Todo.xml ) #| format
 
-function  xml-unNest {
+
+  ####
+
+  
+  Clear-Host
+  function  xml-unNest {
 
   param (
 
@@ -87,35 +100,85 @@ function  xml-unNest {
   [Parameter(Mandatory=$false)][int]$depth = 0
   )     
     $counter = 0
+
     ##"has childnodes"
-    ForEach ($XmlNode in $xml) 
+    ForEach ($XmlNode in $xml.ChildNodes) 
     {   
         $counter= $counter+1     
-        $q = xml-pack $XmlNode,$depth,$counter 
         
-        if($q.complexity -cge 1 -and $depth -le 3)
+        #$q = $XmlNode | ConvertTo-Xml
+        
+
+        $LocalName = $XmlNode.localName;
+        $Value = $XmlNode.Value        
+        $Type = $XmlNode.getType()
+        
+                    
+        if($XmlNode.ChildNodes.count -ge 1 )
         {
-            xml-unNest -xml $q.value -depth (1+$depth)
+            $a = $xmlNode.innerXml
+            
+            if($a -is [system.object])
+            {
+                $d = (""+$XmlNode).Substring(0, [Math]::Min((""+$XmlNode).Length, 80))
+                $dd = (""+$XmlNode).Length
+                $b = ($a | ConvertTo-Xml)
+                $c = $b.InnerXml
+                $aa = (""+$a).Substring(0, [Math]::Min((""+$a).Length, 80))
+                $aaa =  (""+$a).Length
+                $bb = (""+$b).Substring(0, [Math]::Min((""+$b).Length, 80))
+                $bbb = (""+$b).Length
+                $cc = (""+$c).Substring(0, [Math]::Min((""+$c).Length, 80))
+                $ccc  = (""+$c).Length
+                $o = $a.keys.length
+          
+
+                 [pscustomobject]@{
+
+                    counter = $counter
+                    LocalName = $LocalName
+                    Value = $value
+                    Type = $type
+                    Depth = $depth
+                    a = $aa
+                    aa = $aaa
+                    b = $bb
+                    bb = $bbb
+                    c = $cc
+                    cc = $ccc
+                    d = $d
+                    dd = $dd
+                    o = $o
+                    
+                    }
+         
+                                                         
+                if($ccc -ge 1 -and $depth -le 10)
+                {
+                    xml-unNest -xml $c -depth (1+$depth)
+                }
+            
+            }
+            else
+            {
+                xml-unNest -xml $a -depth (1+$depth)
+            }
+            
         }
-        $q
+
 
     }
 }
 
   xml-unNest ( get-content C:\Users\crbk01\Desktop\Todo.xml ) #| format
 
-####
-  [xml]$q = get-content C:\Users\crbk01\Desktop\Todo.xml ;$t = $q.DocumentElement.body.sect | ConvertTo-Xml ; $t.ChildNodes
 
-  [xml]$q = get-content C:\Users\crbk01\Desktop\Todo.xml ;$q.ChildNodes.body.sect.ChildNodes
   
-  [xml]$q = get-content C:\Users\crbk01\Desktop\Todo.xml ;$q.DocumentElement
+  ####
 
-  [xml]$q = get-content C:\Users\crbk01\Desktop\Todo.xml ;$q.ChildNodes.body.sect.getType()localName.FirstChild.FirstChild.FirstChild.FirstChild
-
-#####
-Clear-Host
-function  xml-unNest {
+  
+  Clear-Host
+  function  xml-unNest {
 
   param (
 
@@ -123,67 +186,45 @@ function  xml-unNest {
   [Parameter(Mandatory=$false)][int]$depth = 0
   )     
     $counter = 0
-    ##"has childnodes"
-    "outerDp:" + $depth
-    #$xml.Attributes
-    "outerPN:" + $xml.ParentNode
-    "outerLN:" + $xml.LocalName
-    "outerNT:" + $xml.NodeType
+
+    $LocalName = $xml.localName;
+    $Value = $xml.Value        
+    $Type = $xml.getType()        
+    $aa = $Xml.ChildNodes.count 
+     
+    $localName
+    $value
+    $type
+    $aa
+    $counter
+        
     
+    ##"has childnodes"
+    ForEach ($XmlNode in $xml.ChildNodes) 
+    {   
+        $counter= $counter+1     
+        
+        #$q = $XmlNode | ConvertTo-Xml
+        
+        $a = $xmlNodes.innerXml
+        $LocalName = $XmlNode.localName;
+        $Value = $XmlNode.Value        
+        $Type = $XmlNode.getType()        
+        $aa = $XmlNode.ChildNodes.count 
+        
+        $localName
+        $value
+        $type
+        $aa
+                           
 
-    if($depth -eq 0){
-    try{
-        [xml]$q = $xml
-        $xml = $q
-    } catch{}}
-    else
-    {
-        [System.Xml.XmlLinkedNode]$q = $xml
-        $xml = $q
-    }    
-
-    if($xml.ChildNodes)
-    {
-        ForEach ($XmlNode in $q.ChildNodes) 
-        {
-               $counter = $counter+1   
-            if($XmlNode.nodeType -eq "Text"){
-             #   $XmlNode.Attributes
-                "innerNRr:" + $counter
-                "innerLN:" + $XmlNode.LocalName
-                "innerNT:" + $XmlNode.nodeType
-                "innerLT:" + $XmlNode.InnerText
-            }
-            if($XmlNode.ChildNodes -and $XmlNode.childnodes -ne "")
-            {                    
-                "innerCN:" + $XmlNode.childnodes
-                    xml-unNest -xml $XmlNode -depth (1+$depth)
-                
-            }
-
-        }
+        if($aa -ge 1 -and $depth -le 10 )
+        {                                             
+                xml-unNest -xml $a -depth (1+$depth)            
+        }       
     }
-
 }
-xml-unNest ( get-content C:\Users\crbk01\Desktop\Todo.xml )
+
+  xml-unNest ( get-content C:\Users\crbk01\Desktop\Todo.xml ) #| format
 
 
-##
-
-[xml]$q = get-content C:\Users\crbk01\Desktop\Todo.xml ;
-
-$a = $q.ChildNodes
-"a:" + $a.Count
-$b = $a.lastChild
-"b:" + $b.Count
-$c = $b.FirstChild
-"c:" + $c.Count
-$d = $c.FirstChild
-"d:" + $d.Count
-$e = $d.FirstChild
-"e:" + $e.Count
-
-
-
-
-.body.sect.FirstChild.FirstChild.FirstChild.FirstChild.FirstChild
