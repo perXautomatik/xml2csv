@@ -5,7 +5,7 @@
 # AUTHOR: 
 # THANKS TO: Rick Sheeley (original snippet on STack Overflow) 
 # DATE  : 
-#  
+#  Url: https://stackoverflow.com/questions/43393961/powershell-convert-xml-to-csv
 # COMMENT:  
 # Send large XML with multiple children and Attributes to CSv for analysis
 #
@@ -272,5 +272,3 @@ Finally
 # End Finally
 
 }
-
-Url: https://stackoverflow.com/questions/43393961/powershell-convert-xml-to-csv
