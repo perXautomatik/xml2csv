@@ -93,20 +93,12 @@ function Get-Attributes([Object]$pnode)
 {
 
     if($pnode.HasAttributes) {
-
-        foreach($attr in $pnode.Attributes) {
-
-            $xattString+= $attr.Name + ":" + $attr."#text" + ","
-
-        }
-
+        foreach($attr in $pnode.Attributes)
+         {
+         $xattString+= $attr.Name + ":" + $attr."#text" + ","}
     }
-
     else {
-
-            $xattString = $pnode.nNode + ": No Attributes,"
-
-    }
+        $xattString = $pnode.nNode + ": No Attributes,"}
 
     return $xattString
 }
@@ -126,130 +118,86 @@ function Get-XmlNode([ xml ]$XmlDocument, [string]$NodePath, [string]$NamespaceU
     return $node
 }
 
-cls
-$fin = "<Filepath>\<myFile>.xml"
-$fout = "<Filepath>\<myFile>.csv"
+function AppendToXmlArray([ref]$xmlArray,[ref]$row,[string]$inputAttribute,[string]$inputType )
+{
+    $q = $xmlArray.value
+    $q += @([pscustomobject]@{Row= $row.value;Parent=$pNode;Node=$nNode;Attribute='';ItemType='Root';Value=''})
+    
 
-Remove-Item $fout -ErrorAction SilentlyContinue
+    $q[$row.value].Row = $row.value
+    $q[$row.value].Parent = $pNode
+    $q[$row.value].Node = $nNode
+    $q[$row.value].Attribute = $inputAttribute
+    $q[$row.value].ItemType = $inputType
+    $q[$row.value].Value = $attr."#text"
+    $row.value = 1+$row.value
+    $xmlArray.value =$q
+} 
 
-[xml]$xmlContent = get-content $fin
-$row=0
-$COMMA=","
-$pNode = "ROOT"
+    cls
+    $fin = "C:\Users\crbk01\Desktop\Todo.xml"
+    $fout = "C:\Users\crbk01\Desktop\Todo.csv"
 
-# Replace all "MyTopNode" with your top node...
+    Remove-Item $fout -ErrorAction SilentlyContinue
 
-$nNode = "MyTopNode"
+    [xml]$xmlContent = get-content $fin
+    $row=0
+    $COMMA=","
+    $pNode = "ROOT"
+    $xmlArray = @([pscustomobject]@{Row= $row;Parent=$pNode;Node=$nNode;Attribute='';ItemType='Root';Value=''})
+    
+    # Replace all "wordDocument" with your top node..
+    $nNode = "wordDocument" #foreach($attr in $xmlContent) {$attr}
+    
+    
+    AppendToXmlArray -xmlArray([ref]$xmlArray) -row([ref]$row) -inputAttribute "" -inputType "Root"
 
-$xmlArray  = @(
-    [pscustomobject]@{Row= $row;Parent=$pNode;Node=$nNode;Attribute='';ItemType='Root';Value=''})
+    if($xmlContent.wordDocument.HasAttributes) {
 
-$xmlArray[$row].Row = $row
-$xmlArray[$row].Parent = $pNode
-$xmlArray[$row].Node = $nNode
-$xmlArray[$row].Attribute = ""
-$xmlArray[$row].ItemType = "Root"
-$xmlArray[$row].Value = $attr."#text"
-$row++
+        foreach($attr in $xmlContent.wordDocument.Attributes) {
 
-if($xmlContent.MyTopNode.HasAttributes) {
-
-    foreach($attr in $xmlContent.MyTopNode.Attributes) {
-
-        $xmlArray += @(
-            [pscustomobject]@{Row= $row;Parent=$pNode;Node=$nNode;Attribute='';ItemType='Root';Value=''})
-
-        $xmlArray[$row].Row = $row
-        $xmlArray[$row].Parent = $pNode
-        $xmlArray[$row].Node = $nNode
-        $xmlArray[$row].Attribute = $attr.LocalName
-        $xmlArray[$row].ItemType = "Attribute"
-        $xmlArray[$row].Value = $attr."#text"
-        $row++
+                AppendToXmlArray -xmlArray([ref]$xmlArray) -row([ref]$row) -inputAttribute $attr.LocalName -inputType "Attribute"
+        }
 
     }
 
-}
+    # Begin TRY
 
-# Begin TRY
+    try {
 
-try {
+        foreach($node in $xmlContent.wordDocument.ChildNodes) {
 
-    foreach($node in $xmlContent.MyTopNode.ChildNodes) {
+            $pNode = "wordDocument"
 
-        $pNode = "MyTopNode"
+            $nNode = $node.LocalName
 
-        $nNode = $node.LocalName
+            AppendToXmlArray -xmlArray([ref]$xmlArray) -row([ref]$row) -inputAttribute "" -inputType "Root"
 
-        $xmlArray += @(
-            [pscustomobject]@{Row= $row;Parent=$pNode;Node=$nNode;Attribute='';ItemType='Root';Value=''})
-
-        $xmlArray[$row].Row = $row
-        $xmlArray[$row].Parent = $pNode
-        $xmlArray[$row].Node = $nNode
-        $xmlArray[$row].Attribute = ""
-        $xmlArray[$row].ItemType = "Root"
-        $xmlArray[$row].Value = $attr."#text"
-        $row++
-
-        if($nNode.HasAttributes) {
-
-            foreach($attr in $node.Attributes) {
-
-                $xmlArray += @(
-                    [pscustomobject]@{Row= $row;Parent=$pNode;Node=$nNode;Attribute='';ItemType='Root';Value=''})
-
-                $xmlArray[$row].Row = $row
-                $xmlArray[$row].Parent = $pNode
-                $xmlArray[$row].Node = $nNode
-                $xmlArray[$row].Attribute = $attr.LocalName
-                $xmlArray[$row].ItemType = "Attribute"
-                $xmlArray[$row].Value = $attr."#text"
-                $row++
-
-            }
-
-        }
-
-        foreach($sNode in $node.ChildNodes) {
-
-            $pNode = $nNode
-            $snNode = $sNode.LocalName
-
-            $xmlArray += @(
-                [pscustomobject]@{Row= $row;Parent=$pNode;Node=$nNode;Attribute='';ItemType='Root';Value=''})
-
-            $xmlArray[$row].Row = $row
-            $xmlArray[$row].Parent = $pNode
-            $xmlArray[$row].Node = $snNode
-            $xmlArray[$row].Attribute = ""
-            $xmlArray[$row].ItemType = "Root"
-            $xmlArray[$row].Value = $attr."#text"
-            $row++
-
-            if($sNode.HasAttributes) {
-
-                foreach($attr in $sNode.Attributes) {
-
-                    $xmlArray += @(
-                        [pscustomobject]@{Row= $row;Parent=$pNode;Node=$nNode;Attribute='';ItemType='Root';Value=''})
-
-                    $xmlArray[$row].Row = $row
-                    $xmlArray[$row].Parent = $pNode
-                    $xmlArray[$row].Node = $snNode
-                    $xmlArray[$row].Attribute = $attr.LocalName
-                    $xmlArray[$row].ItemType = "Attribute"
-                    $xmlArray[$row].Value = $attr."#text"
-                    $row++
-
+            if($nNode.HasAttributes) {
+                foreach($attr in $node.Attributes) {
+                      AppendToXmlArray -xmlArray([ref]$xmlArray) -row([ref]$row) -inputAttribute $attr.LocalName -inputType "Attribute"
                 }
 
             }
-        }
-    }
 
-    $xmlArray | SELECT Row,Parent,Node,Attribute,ItemType,Value | Export-CSV $fout -NoTypeInformation
-}
+            foreach($sNode in $node.ChildNodes) {
+
+                $pNode = $nNode
+                $snNode = $sNode.LocalName
+                AppendToXmlArray -xmlArray([ref]$xmlArray) -row([ref]$row) -inputAttribute "" -inputType "Root"
+
+                if($sNode.HasAttributes) {
+                    foreach($attr in $sNode.Attributes) {
+                        AppendToXmlArray -xmlArray([ref]$xmlArray) -row([ref]$row) -inputAttribute $attr.LocalName -inputType "Attribute"
+
+                    }
+
+                }
+            }
+        }
+
+        $xmlArray | SELECT Row,Parent,Node,Attribute,ItemType,Value | Export-CSV $fout -NoTypeInformation
+    }
 
 # End TRY
 
@@ -336,7 +284,6 @@ Catch
     Break
 
 # End Catch
-
 }
 
 # Begin Finally
@@ -347,5 +294,4 @@ Finally
     Exit 0
 
 # End Finally
-
 }
