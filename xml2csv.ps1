@@ -120,19 +120,30 @@ function Get-XmlNode([ xml ]$XmlDocument, [string]$NodePath, [string]$NamespaceU
 
 function AppendToXmlArray([ref]$xmlArray,[ref]$row,[string]$inputAttribute,[string]$inputType )
 {
-    $q = $xmlArray.value
-    $q += @([pscustomobject]@{Row= $row.value;Parent=$pNode;Node=$nNode;Attribute='';ItemType='Root';Value=''})
+    $node = $xmlArray.value
+    $node += @([pscustomobject]@{Row= $row.value;Parent=$pNode;Node=$nNode;Attribute='';ItemType='Root';Value=''})
     
-
-    $q[$row.value].Row = $row.value
-    $q[$row.value].Parent = $pNode
-    $q[$row.value].Node = $nNode
-    $q[$row.value].Attribute = $inputAttribute
-    $q[$row.value].ItemType = $inputType
-    $q[$row.value].Value = $attr."#text"
+    $node[$row.value].Row = $row.value
+    $node[$row.value].Parent = $pNode
+    $node[$row.value].Node = $nNode
+    $node[$row.value].Attribute = $inputAttribute
+    $node[$row.value].ItemType = $inputType
+    $node[$row.value].Value = $attr."#text"
     $row.value = 1+$row.value
-    $xmlArray.value =$q
+    $xmlArray.value =$node
 } 
+
+function AddNodeAndSubNodes ([ref]$xmlArray,[ref]$row,$node )
+{
+    AppendToXmlArray -xmlArray($xmlArray) -row($row) -inputAttribute "" -inputType "Root"
+
+    if($node.HasAttributes) {
+        foreach($attr in $node.Attributes) {
+                AppendToXmlArray -xmlArray($xmlArray) -row($row) -inputAttribute $attr.LocalName -inputType "Attribute"
+        }
+    }
+
+}
 
     cls
     $fin = "C:\Users\crbk01\Desktop\Todo.xml"
@@ -148,51 +159,23 @@ function AppendToXmlArray([ref]$xmlArray,[ref]$row,[string]$inputAttribute,[stri
     
     # Replace all "wordDocument" with your top node..
     $nNode = "wordDocument" #foreach($attr in $xmlContent) {$attr}
+    $rootNode = $xmlContent.wordDocument
     
     
-    AppendToXmlArray -xmlArray([ref]$xmlArray) -row([ref]$row) -inputAttribute "" -inputType "Root"
+    AddNodeAndSubNodes -xmlArray([ref]$xmlArray) -row([ref]$row) -q $rootNode
 
-    if($xmlContent.wordDocument.HasAttributes) {
+    try {          # Begin TRY
+        foreach($node in $rootNode.ChildNodes) {
 
-        foreach($attr in $xmlContent.wordDocument.Attributes) {
+            $pNode = $rootNode.localName;$nNode = $node.LocalName
 
-                AppendToXmlArray -xmlArray([ref]$xmlArray) -row([ref]$row) -inputAttribute $attr.LocalName -inputType "Attribute"
-        }
-
-    }
-
-    # Begin TRY
-
-    try {
-
-        foreach($node in $xmlContent.wordDocument.ChildNodes) {
-
-            $pNode = "wordDocument"
-
-            $nNode = $node.LocalName
-
-            AppendToXmlArray -xmlArray([ref]$xmlArray) -row([ref]$row) -inputAttribute "" -inputType "Root"
-
-            if($nNode.HasAttributes) {
-                foreach($attr in $node.Attributes) {
-                      AppendToXmlArray -xmlArray([ref]$xmlArray) -row([ref]$row) -inputAttribute $attr.LocalName -inputType "Attribute"
-                }
-
-            }
+            AddNodeAndSubNodes -xmlArray([ref]$xmlArray) -row([ref]$row) -q $nNode
 
             foreach($sNode in $node.ChildNodes) {
 
-                $pNode = $nNode
-                $snNode = $sNode.LocalName
-                AppendToXmlArray -xmlArray([ref]$xmlArray) -row([ref]$row) -inputAttribute "" -inputType "Root"
-
-                if($sNode.HasAttributes) {
-                    foreach($attr in $sNode.Attributes) {
-                        AppendToXmlArray -xmlArray([ref]$xmlArray) -row([ref]$row) -inputAttribute $attr.LocalName -inputType "Attribute"
-
-                    }
-
-                }
+                $pNode = $nNode;$snNode = $sNode.LocalName
+            
+                AddNodeAndSubNodes -xmlArray([ref]$xmlArray) -row([ref]$row) -q $snNode
             }
         }
 
