@@ -12,3 +12,5 @@ function Get-XmlNode([ xml ]$XmlDocument, [string]$NodePath, [string]$NamespaceU
     $node = $XmlDocument.SelectSingleNode($fullyQualifiedNodePath, $xmlNsManager)
     return $node
 }
+
+Get-XmlNode -xmlDocument (Get-Content "C:\Users\crbk01\Desktop\Todo.xml") 
