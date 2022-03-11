@@ -1,2 +1,2 @@
-[submodule "fork/kindljiri"]
-	path = fork/kindljiri
+[submodule "kindljiri"]
+	path = kindljiri
